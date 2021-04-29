@@ -10,6 +10,11 @@ export class RespondentGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const { req } = GqlExecutionContext.create(context).getContext();
+
+    if (typeof req.headers[Headers.RESPONDENT] !== 'string') {
+      throw new UnauthorizedException(ErrorsMessages[ErrorCode.RESPONDENT_HEADER_NOT_PROVIDED]);
+    }
+
     const respondentObject = Buffer.from(req.headers[Headers.RESPONDENT], 'base64').toString();
     req.respondent = JSON.parse(respondentObject);
 
