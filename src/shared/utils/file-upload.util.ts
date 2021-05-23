@@ -8,5 +8,5 @@ export const createUniqueFilename = (file: Express.Multer.File): string => {
 };
 
 export const createPublicPath = (dir: string, fileName: string) => (
-  join(['public', 'icons', fileName], '/')
+  join(['mypolitics-3', 'public', dir, fileName], '/')
 );
