@@ -8,7 +8,7 @@ import { IMinioService } from './interfaces/minio-service.interface';
 @Injectable()
 export class MinioService implements IMinioService {
   public readonly expiryTime = 60 * 15; // 15 MINUTES
-  public readonly bucketName = 'mypolitics-3';
+  public readonly bucketName = 'mypolitics-cdn';
   private minioClient: Minio.Client;
 
   constructor(
