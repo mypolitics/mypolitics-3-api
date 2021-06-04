@@ -38,6 +38,7 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response
   ): Promise<any> {
+    console.log(req.headers)
     const origin = req.headers?.origin;
     const cookies = new Cookies(req, res);
     const token = await this.authService.createAndGetAccessToken(req.user as User);
