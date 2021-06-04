@@ -8,7 +8,7 @@ import {
   Query,
   Post,
   BadRequestException,
-  Body
+  Body,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -19,12 +19,11 @@ import { AuthService } from './auth.service';
 import { User } from '../users/entities/user.entity';
 import { ErrorCode } from '../../types';
 import { ActionTokenType } from './enums/action-token-type.enum';
+import { getOrigin } from './utils/get-origin.util';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ){}
+  constructor(private readonly authService: AuthService) {}
 
   @Get('facebook')
   @UseGuards(AuthGuard('facebook'))
@@ -36,18 +35,20 @@ export class AuthController {
   @UseGuards(AuthGuard('facebook'))
   async facebookLoginRedirect(
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ): Promise<any> {
-    console.log(req.headers)
-    const origin = req.headers?.origin;
     const cookies = new Cookies(req, res);
-    const token = await this.authService.createAndGetAccessToken(req.user as User);
+    const token = await this.authService.createAndGetAccessToken(
+      req.user as User,
+    );
     cookies.set(ConstCookies.JWT, token, {
       httpOnly: true,
-      expires: dayjs().add(7, 'day').toDate(),
+      expires: dayjs()
+        .add(7, 'day')
+        .toDate(),
     });
 
-    res.redirect(`${origin || ''}/editor`);
+    res.redirect(`https://${getOrigin(req)}/editor`);
   }
 
   @Get('verify')
@@ -56,7 +57,7 @@ export class AuthController {
     @Query() { code, userId }: {
       code: string;
       userId: string;
-    }
+    },
   ): Promise<any> {
     const verified = this.authService.verifyActionToken(code, userId);
 
@@ -72,7 +73,7 @@ export class AuthController {
     @Res() res: Response,
     @Body() { recaptcha }: {
       recaptcha: string;
-    }
+    },
   ): Promise<any> {
     const cookies = new Cookies(req, res);
     const user = req.user as User;
@@ -86,35 +87,43 @@ export class AuthController {
       const lastToken = await this.authService.actionTokensService.findOne(
         { user },
         {},
-        { sort: {
-          expiresOn: 1,
-        } },
+        {
+          sort: {
+            expiresOn: 1,
+          },
+        },
       );
       const lastTokenValid = dayjs(lastToken?.expiresOn).isAfter(dayjs());
 
       if (lastTokenValid) {
-        throw new BadRequestException(ErrorsMessages[ErrorCode.EMAIL_NOT_VERIFIED_SENT_IN_15_MIN]);
+        throw new BadRequestException(
+          ErrorsMessages[ErrorCode.EMAIL_NOT_VERIFIED_SENT_IN_15_MIN],
+        );
       }
 
-      const token = await this.authService.createAndGetActionToken(user, ActionTokenType.VERIFY_EMAIL);
+      const token = await this.authService.createAndGetActionToken(
+        user,
+        ActionTokenType.VERIFY_EMAIL,
+      );
       await this.authService.sendEmailConfirm(user, token);
-      throw new BadRequestException(ErrorsMessages[ErrorCode.EMAIL_NOT_VERIFIED_SENT_NOW]);
+      throw new BadRequestException(
+        ErrorsMessages[ErrorCode.EMAIL_NOT_VERIFIED_SENT_NOW],
+      );
     }
 
     const token = await this.authService.createAndGetAccessToken(user);
     cookies.set(ConstCookies.JWT, token, {
       httpOnly: true,
-      expires: dayjs().add(7, 'day').toDate(),
+      expires: dayjs()
+        .add(7, 'day')
+        .toDate(),
     });
 
     res.status(200).end();
   }
 
   @Post('logout')
-  async logout(
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<any> {
+  async logout(@Req() req: Request, @Res() res: Response): Promise<any> {
     const cookies = new Cookies(req, res);
     cookies.set(ConstCookies.JWT, '', {
       httpOnly: true,
