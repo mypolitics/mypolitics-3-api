@@ -38,6 +38,7 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response
   ): Promise<any> {
+    const host = req.headers.host;
     const cookies = new Cookies(req, res);
     const token = await this.authService.createAndGetAccessToken(req.user as User);
     cookies.set(ConstCookies.JWT, token, {
@@ -45,7 +46,7 @@ export class AuthController {
       expires: dayjs().add(7, 'day').toDate(),
     });
 
-    res.redirect('/editor');
+    res.redirect(`https://${host}/editor`);
   }
 
   @Get('verify')
